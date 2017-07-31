@@ -1,0 +1,25 @@
+group 'com.ullink.ultools'
+version '1.0'
+
+apply plugin: 'groovy'
+apply plugin: 'java-ullink'
+
+targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+buildscript {
+    dependencies {
+        classpath(
+                [group: 'com.ullink.gradle', name: 'gradle-ullink-plugin', version: '1.22']
+        )
+    }
+}
+
+dependencies {
+    packaged 'com.google.guava:guava:22.0'
+    packaged 'org.codehaus.groovy:groovy-all:2.3.11'
+    packaged 'org.elasticsearch.client:transport:5.0.0-alpha5'
+    packaged group: 'junit', name: 'junit', version: '4.12'
+
+    compileOnly 'org.projectlombok:lombok:1.16.18'
+}
