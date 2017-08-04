@@ -5,9 +5,9 @@ import org.gradle.api.tasks.testing.TestResult
 class Result {
     String name
     String classname
-    String errorMessage
-    long executionTime
+    float executionTime
     String failureMessage
     String failureType
     TestResult.ResultType resultType
+    String timestamp
 }

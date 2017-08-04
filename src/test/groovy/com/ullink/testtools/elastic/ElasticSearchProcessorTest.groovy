@@ -5,7 +5,6 @@ import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 
 class ElasticSearchProcessorTest {
@@ -21,11 +20,12 @@ class ElasticSearchProcessorTest {
     }
 
     @Test
-    @Ignore
     void sendJson() {
-        String source = "{\"name\":\"subtract\",\"description\":\"com.ullink.ultest.junit.integration.test.elastic.MathTest\",\"status\":\"SUCCESS\",\"executionTime\":0,\"timeStarted\":1501753772044,\"timeFinished\":1501753772045,\"automated\":false,\"systemProperties\":{\"architecture\":\"amd64\",\"osName\":\"Windows 10\",\"javaVersion\":\"1.8.0_131\"},\"projectProperties\":{\"businessLine\":\"connectivity\",\"version\":\"value: 1.1.02\",\"projectName\":\"value: ul-test-integration\",\"buildType\":\"SNAPSHOT\"}}"
+        String source = """
+            {"classname":"com.ullink.ultest.junit.integration.test.elastic.MathTest","failureType":null,"executionTime":1.0,"failureMessage":null,"timestamp":"2017-08-18T03:41:19","name":"subtract","resultType":"SUCCESS"}
+         """
         try {
-            processor.add(new IndexRequest("movies", "movie", "ajfsgdfbstdccccfy").source(source, XContentType.JSON))
+            processor.add(new IndexRequest("testresults-com-ullink-ultest-junit-integration-test-elastic-mathtest-2017-08-19", "testcase", "subtract_2017-08-18T03:41:19").source(source, XContentType.JSON))
             processor.close()
         }
         catch (Exception e) {
