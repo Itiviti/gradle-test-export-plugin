@@ -1,20 +1,13 @@
 apply plugin: 'groovy'
-apply plugin: 'java-ullink'
+apply plugin: 'java'
 apply plugin: 'java-gradle-plugin'
 
 
 targetCompatibility = JavaVersion.VERSION_1_8
 sourceCompatibility = JavaVersion.VERSION_1_8
 
-buildscript {
-    dependencies {
-        classpath(
-                [group: 'com.ullink.gradle', name: 'gradle-ullink-plugin', version: '1.31']
-        )
-    }
-}
 
-repositories{
+repositories {
     mavenCentral()
 }
 
@@ -22,8 +15,7 @@ dependencies {
     compile(
             'junit:junit:4.12',
             'org.elasticsearch.client:transport:5.1.1',
-            'com.google.guava:guava:23.0',
-            'com.ullink.gradle:gradle-ullink-plugin:1.31'
+            'com.google.guava:guava:23.0'
     )
 
     testCompile(
