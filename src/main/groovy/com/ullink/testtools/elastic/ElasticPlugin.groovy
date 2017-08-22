@@ -7,12 +7,10 @@ import org.gradle.api.tasks.testing.Test
 class ElasticPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        ElasticExtension extension = project.extensions.create("elastic", ElasticExtension.class)
 
-        ElasticTask task = project.task "elastic", type: ElasticTask.class, {
-            conventionMapping.map 'port', { extension.port }
-            conventionMapping.map 'clusterName', { extension.clusterName }
-            conventionMapping.map 'ipAddress', { extension.ipAddress }
+        ElasticTask task = project.task "testExport", type: ElasticTask, {
+            group = 'verification'
+            description = 'Generates test reports and pushes them to elasticsearch cluster'
         }
 
         project.tasks.withType(Test.class).each { Test test ->

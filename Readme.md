@@ -1,4 +1,4 @@
-[![](https://jitpack.io/v/Ullink/gradle-test-export-plugin.svg)](https://jitpack.io/#Ullink/gradle-test-export-plugin)
+[![Build Status](https://travis-ci.org/Ullink/gradle-test-export-plugin.svg?branch=master)](https://travis-ci.org/Ullink/gradle-test-export-plugin) [![](https://jitpack.io/v/Ullink/gradle-test-export-plugin.svg)](https://jitpack.io/#Ullink/gradle-test-export-plugin)
 
 
 # Gradle Test Export Plugin
@@ -12,7 +12,7 @@ the results for visualization on a Kibana Dashboard.
 You can add this plugin as a dependency to your project through [JitPack](https://jitpack.io/#Ullink/gradle-test-export-plugin).
 
 ```
-apply: plugin 'elastic'
+apply: plugin 'test-export'
 ```
 - `Group id: com.ullink.gradle`
 - `Artifact id: gradle-test-export-plugin`
@@ -25,10 +25,25 @@ by the JUnit runners and posts them to an elastic search cluster.
 Settings for the cluster can be modified in the `build.gradle` file
 
 ```
-elastic {
-    ipAddress: 127.0.0.1
-    port: 9300
-    clusterName: elasticsearch
+testExport {
+    ipAddress = '127.0.0.1'
+    port = 9300
+    clusterName = 'elasticsearch'
+    properties = [
+            any: "property"
+        ]
+    // properites = {
+    //        return [
+    //            any: "property"
+    //        ]
+    //    }
+    type = 'testcase'
 }
 ```
+
+### Properties
+Properties can take a closure or a map as input. The closure must return a map of _extra_ properties
+that one might want to push to the elastic search.
+
+
 

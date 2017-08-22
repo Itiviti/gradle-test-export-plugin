@@ -10,4 +10,5 @@ class Result {
     String failureType
     TestResult.ResultType resultType
     String timestamp
+    Map<String, ?> properties
 }
