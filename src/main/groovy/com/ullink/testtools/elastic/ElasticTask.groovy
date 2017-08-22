@@ -7,7 +7,6 @@ import groovy.util.logging.Slf4j
 import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.xcontent.XContentType
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.testing.Test
@@ -64,7 +63,7 @@ class ElasticTask extends DefaultTask {
                 String type = "testcase"
                 String id = it.getName() + "_" + it.timestamp
                 IndexRequest indexObj = new IndexRequest(index, type, id)
-                processor.add(indexObj.source(output, XContentType.JSON))
+                processor.add(indexObj.source(output))
             }
         }
         processor.close()
