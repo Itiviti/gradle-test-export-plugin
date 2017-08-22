@@ -1,3 +1,6 @@
+[![](https://jitpack.io/v/Ullink/gradle-test-export-plugin.svg)](https://jitpack.io/#Ullink/gradle-test-export-plugin)
+
+
 # Gradle Test Export Plugin
 This plugin allows an application to post the JUnit test results to an ElasticSearch
 cluster.
