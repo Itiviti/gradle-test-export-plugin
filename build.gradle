@@ -15,7 +15,7 @@ dependencies {
     compile(
             'junit:junit:4.12',
             'org.elasticsearch.client:transport:5.1.1',
-            'com.google.guava:guava:23.0'
+            'org.apache.logging.log4j:log4j-core:2.8.2'
     )
 
     testCompile(
