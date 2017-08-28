@@ -7,25 +7,47 @@ import groovy.util.logging.Slf4j
 import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.transport.TransportClient
-import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
 @Slf4j
-class ElasticTask extends DefaultTask {
-    String port
-    String clusterName
-    String ipAddress
+class TestExportTask extends Exec {
 
+    @Input
+    @Optional
+    String port
+
+    @Input
+    @Optional
+    String clusterName
+
+    @Input
+    @Optional
+    String host
+
+    @Input
+    @Optional
+    def properties
+
+    @Input
+    @Optional
+    String type = "testcase"
+
+    @Internal
+    def resultProperties
+    @Internal
     BulkProcessor processor
+    @Internal
     TransportClient client
 
-
     def overrideDefaultProperties(Properties properties) {
-        if (getIpAddress() != null) {
-            log.error "setting ip address " + getIpAddress()
-            properties.setProperty('ipAddress', getIpAddress())
+        if (getHost() != null) {
+            log.error "setting host " + getHost()
+            properties.setProperty('host', getHost())
         }
         if (getClusterName() != null) {
             properties.setProperty('clusterName', getClusterName())
@@ -36,11 +58,16 @@ class ElasticTask extends DefaultTask {
         return properties
     }
 
+    @Override
+    void exec() {
+        if (properties instanceof Closure) {
+            resultProperties = properties.call()
+        }
+        if (properties instanceof Map) {
+            resultProperties = properties
+        }
 
-    @TaskAction
-    def doTask() {
         ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
-
         Properties parameters = overrideDefaultProperties(elasticSearchProcessor.getParameters())
 
         def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener()
@@ -55,12 +82,12 @@ class ElasticTask extends DefaultTask {
                 if (it.getName().endsWith('.xml'))
                     files << it
             }
-            def list = parseTestFiles(processor, files)
+            def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
                 String index = "testresults-" + it.getClassname() + "-" + it.timestamp.find("([\\d-]+)")
                 index = index.toLowerCase().replace('.', '-')
-                String type = "testcase"
+                String type = type
                 String id = it.getName() + "_" + it.timestamp
                 IndexRequest indexObj = new IndexRequest(index, type, id)
                 processor.add(indexObj.source(output))
@@ -69,7 +96,7 @@ class ElasticTask extends DefaultTask {
         processor.close()
     }
 
-    def parseTestFiles(BulkProcessor bulkProcessor, List<File> files) {
+    def parseTestFiles(List<File> files) {
         def list = []
         files.each {
             def xmlDoc = new XmlSlurper().parse(it)
@@ -88,7 +115,6 @@ class ElasticTask extends DefaultTask {
     }
 
     def parseTestCase(def p) {
-
         String testname = p.@name
         Result result = new Result(name: testname)
         def time = Float.parseFloat(p.@time.toString()) * 1000
@@ -110,6 +136,7 @@ class ElasticTask extends DefaultTask {
                 result.resultType = TestResult.ResultType.SKIPPED
             }
         }
+        result.properties = resultProperties
         result
     }
 }
