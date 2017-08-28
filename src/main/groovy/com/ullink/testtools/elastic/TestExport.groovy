@@ -4,11 +4,11 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
 
-class ElasticPlugin implements Plugin<Project> {
+class TestExport implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
-        ElasticTask task = project.task "testExport", type: ElasticTask, {
+        TestExportTask task = project.task "testExport", type: TestExportTask, {
             group = 'verification'
             description = 'Generates test reports and pushes them to elasticsearch cluster'
         }

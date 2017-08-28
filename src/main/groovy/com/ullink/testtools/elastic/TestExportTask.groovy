@@ -8,19 +8,40 @@ import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.transport.TransportClient
 import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
 @Slf4j
-class ElasticTask extends Exec {
+class TestExportTask extends Exec {
+
+    @Input
+    @Optional
     String port
+
+    @Input
+    @Optional
     String clusterName
+
+    @Input
+    @Optional
     String ipAddress
+
+    @Input
+    @Optional
     def properties
+
+    @Input
+    @Optional
     String type = "testcase"
 
-    private resultProperties
+    @Internal
+    def resultProperties
+    @Internal
     BulkProcessor processor
+    @Internal
     TransportClient client
 
     def overrideDefaultProperties(Properties properties) {
@@ -37,13 +58,10 @@ class ElasticTask extends Exec {
         return properties
     }
 
-
     @Override
     void exec() {
-        resultProperties
         if (properties instanceof Closure) {
             resultProperties = properties.call()
-            println resultProperties
         }
         if (properties instanceof Map) {
             resultProperties = properties
@@ -71,7 +89,6 @@ class ElasticTask extends Exec {
                 index = index.toLowerCase().replace('.', '-')
                 String type = type
                 String id = it.getName() + "_" + it.timestamp
-                println output
                 IndexRequest indexObj = new IndexRequest(index, type, id)
                 processor.add(indexObj.source(output))
             }
