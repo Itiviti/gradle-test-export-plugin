@@ -25,7 +25,7 @@ class ElasticSearchProcessor {
                 .put("cluster.name", clusterName)
                 .build()
         int port = parameters.getProperty("port", "9300") as int
-        String ipAddress = parameters.getProperty("ipAddress", "127.0.0.1")
+        String ipAddress = parameters.getProperty("host", "127.0.0.1")
         return new PreBuiltTransportClient(settings)
                 .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(ipAddress), port))
     }

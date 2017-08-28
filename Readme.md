@@ -26,7 +26,7 @@ Settings for the cluster can be modified in the `build.gradle` file
 
 ```
 testExport {
-    ipAddress = '127.0.0.1'
+    host = '127.0.0.1'
     port = 9300
     clusterName = 'elasticsearch'
     properties = [
@@ -40,6 +40,14 @@ testExport {
     type = 'testcase'
 }
 ```
+
+### Parameters
+| name | optional | default value | type|
+|------|----------|----------------|-----|
+|host| true | 127.0.0.1| string |
+|port | true | 9300| int |
+|clusterName | true | elasticsearch | string |
+| properties | true |`null`| map / closure |
 
 ### Properties
 Properties can take a closure or a map as input. The closure must return a map of _extra_ properties

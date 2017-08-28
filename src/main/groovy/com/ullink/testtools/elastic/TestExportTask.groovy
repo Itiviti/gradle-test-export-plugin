@@ -27,7 +27,7 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    String ipAddress
+    String host
 
     @Input
     @Optional
@@ -45,9 +45,9 @@ class TestExportTask extends Exec {
     TransportClient client
 
     def overrideDefaultProperties(Properties properties) {
-        if (getIpAddress() != null) {
-            log.error "setting ip address " + getIpAddress()
-            properties.setProperty('ipAddress', getIpAddress())
+        if (getHost() != null) {
+            log.error "setting host " + getHost()
+            properties.setProperty('host', getHost())
         }
         if (getClusterName() != null) {
             properties.setProperty('clusterName', getClusterName())
