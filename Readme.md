@@ -74,7 +74,7 @@ Type is a string or a closure that returns string, it is the __type_ field in th
       "properties": {
         "key": "value"
       },
-      "resultType": FAILURE/SUCCESS/IGNORE
+      "resultType": FAILURE/SUCCESS/SKIPPED
     }
 }
 ```
