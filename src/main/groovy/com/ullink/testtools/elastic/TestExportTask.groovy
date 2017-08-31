@@ -35,7 +35,7 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    String type = "testcase"
+    def type = "testcase"
 
     @Internal
     def resultProperties
@@ -87,9 +87,13 @@ class TestExportTask extends Exec {
                 def output = JsonOutput.toJson(it)
                 String index = "testresults-" + it.getClassname() + "-" + it.timestamp.find("([\\d-]+)")
                 index = index.toLowerCase().replace('.', '-')
-                String type = type
+                String typeFinal
+                if (type instanceof String)
+                    typeFinal = type
+                if (type instanceof Closure)
+                    typeFinal = type.call()
                 String id = it.getName() + "_" + it.timestamp
-                IndexRequest indexObj = new IndexRequest(index, type, id)
+                IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
                 processor.add(indexObj.source(output))
             }
         }

@@ -48,10 +48,37 @@ testExport {
 |port | true | 9300| int |
 |clusterName | true | elasticsearch | string |
 | properties | true |`null`| map / closure |
+| type | true |`testcase`| string / closure |
 
 ### Properties
 Properties can take a closure or a map as input. The closure must return a map of _extra_ properties
 that one might want to push to the elastic search.
+
+### Type
+Type is a string or a closure that returns string, it is the __type_ field in the ElasticSearch record.
+
+## Final TestExport JSON
+```
+{
+    "_index": "testresults-LOWER-CASED-SUITE-NAME-DATESTAMP",
+    "_type": Type_Property_Field,
+    "_id": TESTCASE_NAME_TIMESTAMP,
+    "_score": 1,
+    "_source": {
+      "classname":  CLASS_NAME,
+      "failureType": "",
+      "executionTime": INT_MILLISECONDS,
+      "failureMessage": "",
+      "timestamp": TIMESTAMP,
+      "name": TESTCASE_NAME,
+      "properties": {
+        "key": "value"
+      },
+      "resultType": FAILURE/SUCCESS/IGNORE
+    }
+}
+```
+
 
 
 
