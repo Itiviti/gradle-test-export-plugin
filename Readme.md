@@ -38,6 +38,7 @@ testExport {
     //        ]
     //    }
     type = 'testcase'
+    targetDirectory = 'build/test-results'
 }
 ```
 
@@ -49,6 +50,7 @@ testExport {
 |clusterName | true | elasticsearch | string |
 | properties | true |`null`| map / closure |
 | type | true |`testcase`| string / closure |
+| targetDirectory | true |build/test-results| string |
 
 ### Properties
 Properties can take a closure or a map as input. The closure must return a map of _extra_ properties
