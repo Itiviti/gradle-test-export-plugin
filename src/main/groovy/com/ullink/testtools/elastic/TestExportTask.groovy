@@ -14,6 +14,8 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
+import static java.util.Collections.singletonList
+
 @Slf4j
 class TestExportTask extends Exec {
 
@@ -32,6 +34,10 @@ class TestExportTask extends Exec {
     @Input
     @Optional
     def properties
+
+    @Input
+    @Optional
+    def targetDirectory
 
     @Input
     @Optional
@@ -74,11 +80,18 @@ class TestExportTask extends Exec {
         client = elasticSearchProcessor.buildTransportClient(parameters)
         processor = elasticSearchProcessor.buildBulkRequest(client, bulkProcessorListener)
 
-        project.tasks.withType(Test.class).forEach {
-            def xmlReport = it.reports.getJunitXml()
-            File reportLocation = xmlReport.getDestination()
+        if (targetDirectory == null) {
+            project.tasks.withType(Test.class).forEach {
+                def xmlReport = it.reports.getJunitXml()
+                targetDirectory << xmlReport.getDestination()
+            }
+        }
+        if (targetDirectory instanceof String) {
+            targetDirectory = singletonList(new File(targetDirectory))
+        }
+        targetDirectory.each {
             def files = []
-            reportLocation.eachFileRecurse(FileType.FILES) {
+            it.eachFileRecurse(FileType.FILES) {
                 if (it.getName().endsWith('.xml'))
                     files << it
             }
@@ -97,6 +110,7 @@ class TestExportTask extends Exec {
                 processor.add(indexObj.source(output))
             }
         }
+
         processor.close()
     }
 
