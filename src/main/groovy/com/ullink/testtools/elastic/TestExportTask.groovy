@@ -81,6 +81,7 @@ class TestExportTask extends Exec {
         processor = elasticSearchProcessor.buildBulkRequest(client, bulkProcessorListener)
 
         if (targetDirectory == null) {
+            targetDirectory = []
             project.tasks.withType(Test.class).forEach {
                 def xmlReport = it.reports.getJunitXml()
                 targetDirectory << xmlReport.getDestination()
