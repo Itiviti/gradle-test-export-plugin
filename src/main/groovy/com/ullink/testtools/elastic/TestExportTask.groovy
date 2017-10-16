@@ -43,6 +43,10 @@ class TestExportTask extends Exec {
     @Optional
     def type = "testcase"
 
+    @Input
+    @Optional
+    String indexPrefix = "testresults-"
+
     @Internal
     def resultProperties
     @Internal
@@ -99,7 +103,7 @@ class TestExportTask extends Exec {
             def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
-                String index = "testresults-" + it.getClassname() + "-" + it.timestamp.find("([\\d-]+)")
+                String index = indexPrefix + it.getClassname() + "-" + it.timestamp.find("([\\d-]+)")
                 index = index.toLowerCase().replace('.', '-')
                 String typeFinal
                 if (type instanceof String)
