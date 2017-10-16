@@ -50,6 +50,7 @@ testExport {
 |clusterName | true | elasticsearch | string |
 | properties | true |`null`| map / closure |
 | type | true |`testcase`| string / closure |
+| indexPrefix | true |`testresults-`| string |
 | targetDirectory | true |build/test-results| string |
 
 ### Properties
