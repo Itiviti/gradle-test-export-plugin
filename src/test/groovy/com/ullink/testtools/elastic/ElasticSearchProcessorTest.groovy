@@ -27,7 +27,7 @@ class ElasticSearchProcessorTest {
             {"classname":"com.ullink.ultest.junit.integration.test.elastic.MathTest","failureType":null,"executionTime":1.0,"failureMessage":null,"timestamp":"2017-08-18T03:41:19","name":"subtract","resultType":"SUCCESS"}
          """
         try {
-            processor.add(new IndexRequest("testresults-com-ullink-ultest-junit-integration-test-elastic-mathtest-2017-08-19", "testcase", "subtract_2017-08-18T03:41:19").source(source, XContentType.JSON))
+            processor.add(new IndexRequest("testresults-2017-08-19", "testcase", "subtract_2017-08-18T03:41:19").source(source, XContentType.JSON))
             processor.close()
         }
         catch (Exception e) {
