@@ -14,6 +14,9 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import static java.util.Collections.singletonList
 
 @Slf4j
@@ -46,6 +49,10 @@ class TestExportTask extends Exec {
     @Input
     @Optional
     String indexPrefix = "testresults-"
+
+    @Input
+    @Optional
+    String indexTimestampPattern = "yyyy-MM-dd"
 
     @Internal
     def resultProperties
@@ -103,7 +110,8 @@ class TestExportTask extends Exec {
             def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
-                String index = indexPrefix + it.timestamp.find("([\\d-]+)")
+                def timetamp = LocalDateTime.parse(it.timestamp)
+                String index = indexPrefix + timetamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
                 index = index.replace('.', '-')
                 String typeFinal
                 if (type instanceof String)
