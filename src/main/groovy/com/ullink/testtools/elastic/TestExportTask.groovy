@@ -98,6 +98,9 @@ class TestExportTask extends Exec {
                 targetDirectory << xmlReport.getDestination()
             }
         }
+        if (targetDirectory instanceof GString) {
+            targetDirectory = targetDirectory.toString()
+        }
         if (targetDirectory instanceof String) {
             targetDirectory = singletonList(new File(targetDirectory))
         }
@@ -114,10 +117,19 @@ class TestExportTask extends Exec {
                 String index = indexPrefix + timetamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
                 index = index.replace('.', '-')
                 String typeFinal
-                if (type instanceof String)
-                    typeFinal = type
-                if (type instanceof Closure)
-                    typeFinal = type.call()
+                switch (type) {
+                    case GString:
+                        typeFinal = type.toString()
+                        break
+                    case String:
+                        typeFinal = type
+                        break
+                    case Closure:
+                        typeFinal = type.call()
+                        break
+                    default:
+                        throw new IllegalArgumentException("'type' attribute of type ${type.getClass()} is not supported")
+                }
                 String id = it.getName() + "_" + it.timestamp
                 IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
                 processor.add(indexObj.source(output))
