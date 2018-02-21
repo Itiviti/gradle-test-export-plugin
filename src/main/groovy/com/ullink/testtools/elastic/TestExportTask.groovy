@@ -14,6 +14,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
+import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -130,7 +131,7 @@ class TestExportTask extends Exec {
                     default:
                         throw new IllegalArgumentException("'type' attribute of type ${type.getClass()} is not supported")
                 }
-                String id = it.getName() + "_" + it.timestamp
+                String id = sha1Hashed(it.getClassname() + it.getName() + it.timestamp)
                 IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
                 processor.add(indexObj.source(output))
             }
@@ -139,7 +140,13 @@ class TestExportTask extends Exec {
         processor.close()
     }
 
-    def parseTestFiles(List<File> files) {
+    static def sha1Hashed(String value) {
+        def messageDigest = MessageDigest.getInstance("SHA-1")
+        String hexString = messageDigest.digest(value.getBytes()).collect { String.format('%02x', it)}.join()
+        return hexString
+    }
+
+    List<Result> parseTestFiles(List<File> files) {
         def list = []
         files.each {
             def xmlDoc = new XmlSlurper().parse(it)
