@@ -5,7 +5,7 @@ import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.bulk.BulkResponse
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
-import org.elasticsearch.common.transport.InetSocketTransportAddress
+import org.elasticsearch.common.transport.TransportAddress
 import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.transport.client.PreBuiltTransportClient
 
@@ -27,7 +27,7 @@ class ElasticSearchProcessor {
         int port = parameters.getProperty("port", "9300") as int
         String ipAddress = parameters.getProperty("host", "127.0.0.1")
         return new PreBuiltTransportClient(settings)
-                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(ipAddress), port))
+                .addTransportAddress(new TransportAddress(InetAddress.getByName(ipAddress), port))
     }
 
     def buildBulkRequest(TransportClient client, BulkProcessor.Listener bulkProcessorListener) {

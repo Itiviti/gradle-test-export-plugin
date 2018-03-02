@@ -14,7 +14,7 @@ repositories {
 dependencies {
     compile(
             'junit:junit:4.12',
-            'org.elasticsearch.client:transport:5.1.1',
+            'org.elasticsearch.client:transport:6.2.2',
             'org.apache.logging.log4j:log4j-core:2.8.2'
     )
 
