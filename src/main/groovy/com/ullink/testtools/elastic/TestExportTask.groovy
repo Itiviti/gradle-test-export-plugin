@@ -7,6 +7,7 @@ import groovy.util.logging.Slf4j
 import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.common.xcontent.XContentType
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
@@ -133,7 +134,7 @@ class TestExportTask extends Exec {
                 }
                 String id = sha1Hashed(it.getClassname() + it.getName() + it.timestamp)
                 IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
-                processor.add(indexObj.source(output))
+                processor.add(indexObj.source(XContentType.JSON, output))
             }
         }
 
