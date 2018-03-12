@@ -134,7 +134,7 @@ class TestExportTask extends Exec {
                 }
                 String id = sha1Hashed(it.getClassname() + it.getName() + it.timestamp)
                 IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
-                processor.add(indexObj.source(XContentType.JSON, output))
+                processor.add(indexObj.source(output, XContentType.JSON))
             }
         }
 
