@@ -57,8 +57,6 @@ class TestExportTask extends Exec {
     String indexTimestampPattern = "yyyy-MM-dd"
 
     @Internal
-    def resultProperties
-    @Internal
     BulkProcessor processor
     @Internal
     TransportClient client
@@ -79,13 +77,6 @@ class TestExportTask extends Exec {
 
     @Override
     void exec() {
-        if (properties instanceof Closure) {
-            resultProperties = properties.call()
-        }
-        if (properties instanceof Map) {
-            resultProperties = properties
-        }
-
         ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
         Properties parameters = overrideDefaultProperties(elasticSearchProcessor.getParameters())
 
@@ -187,7 +178,17 @@ class TestExportTask extends Exec {
                 result.resultType = TestResult.ResultType.SKIPPED
             }
         }
-        result.properties = resultProperties
+        result.properties = resolveProperties(p)
         result
+    }
+
+    def resolveProperties(testCase) {
+        if (properties instanceof Closure) {
+            return properties.call(testCase)
+        }
+        if (properties instanceof Map) {
+            return properties
+        }
+        return null
     }
 }
