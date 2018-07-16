@@ -185,6 +185,7 @@ class TestExportTask extends ConventionTask {
                 result.with {
                     failureMessage = node.@message
                     failureType = node.@type
+                    failureText = node.text()
                     resultType = TestResult.ResultType.FAILURE
                 }
             }
