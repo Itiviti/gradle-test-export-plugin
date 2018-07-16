@@ -171,6 +171,7 @@ class TestExportTask extends Exec {
                 result.with {
                     failureMessage = node.@message
                     failureType = node.@type
+                    failureText = node.text()
                     resultType = TestResult.ResultType.FAILURE
                 }
             }
