@@ -3,6 +3,7 @@ package com.ullink.testtools.elastic
 import com.ullink.testtools.elastic.models.Result
 import groovy.io.FileType
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
@@ -15,7 +16,9 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
+import java.nio.file.Paths
 import java.security.MessageDigest
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -46,6 +49,10 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
+    def enrichment
+
+    @Input
+    @Optional
     def type = "testcase"
 
     @Input
@@ -54,7 +61,7 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    String indexTimestampPattern = "yyyy-MM-dd"
+    String indexTimestampPattern = "yyyy-MM"
 
     @Internal
     BulkProcessor processor
@@ -72,6 +79,7 @@ class TestExportTask extends Exec {
         if (getPort() != null) {
             properties.setProperty('port', getPort())
         }
+
         return properties
     }
 
@@ -106,9 +114,14 @@ class TestExportTask extends Exec {
             def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
-                def timetamp = LocalDateTime.parse(it.timestamp)
-                String index = indexPrefix + timetamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
+                output= new JsonSlurper().parseText(output)
+                assert output instanceof Map
+                output.remove("timestamp")
+
+                def timestamp = LocalDateTime.parse(it.timestamp)
+                String index = indexPrefix + timestamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
                 index = index.replace('.', '-')
+
                 String typeFinal
                 switch (type) {
                     case GString:
@@ -123,10 +136,24 @@ class TestExportTask extends Exec {
                     default:
                         throw new IllegalArgumentException("'type' attribute of type ${type.getClass()} is not supported")
                 }
+
                 String id = sha1Hashed(it.getClassname() + it.getName() + it.timestamp)
                 IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
                 processor.add(indexObj.source(output, XContentType.JSON))
             }
+        }
+
+        def InputJSONFile = getEnrichment().featureJsonParser('getFeatureJsonFile')
+        def InputJSON = getEnrichment().featureJsonParser('getFeatureJsonParseText')
+
+        def indexFeature = "feature-" + indexPrefix + new SimpleDateFormat(indexTimestampPattern).format(InputJSONFile.lastModified())
+        String typeFinal = "feature"
+
+        for (object in InputJSON) {
+            String id = sha1Hashed(object.toString())
+            IndexRequest indexObjFeature = new IndexRequest(indexFeature, typeFinal, id)
+            object.productName= getProperties().product.name
+            processor.add(indexObjFeature.source(object, XContentType.JSON))
         }
 
         processor.close()
@@ -134,7 +161,7 @@ class TestExportTask extends Exec {
 
     static def sha1Hashed(String value) {
         def messageDigest = MessageDigest.getInstance("SHA-1")
-        String hexString = messageDigest.digest(value.getBytes()).collect { String.format('%02x', it)}.join()
+        String hexString = messageDigest.digest(value.getBytes()).collect { String.format('%02x', it) }.join()
         return hexString
     }
 
@@ -142,21 +169,25 @@ class TestExportTask extends Exec {
         def list = []
         files.each {
             def xmlDoc = new XmlSlurper().parse(it)
+            def fileName = (xmlDoc.@name)
             String timestamp = xmlDoc.@timestamp
+            def solutions = getEnrichment().testCaseJsonParser(fileName)
+
+            def filePath = Paths.get("src", "test", "groovy", fileName.toString().replace(".", File.separator) + ".groovy")
 
             xmlDoc.children().each {
                 if (it.name() == "testcase") {
-                    Result result = parseTestCase(it)
+                    Result result = parseTestCase(it,solutions)
                     result.timestamp = timestamp
+                    result.filePath = filePath
                     list << result
                 }
             }
         }
-
         list
     }
 
-    def parseTestCase(def p) {
+    def parseTestCase(def p, def solution) {
         String testname = p.@name
         Result result = new Result(name: testname)
         def time = Float.parseFloat(p.@time.toString()) * 1000
@@ -171,7 +202,6 @@ class TestExportTask extends Exec {
                 result.with {
                     failureMessage = node.@message
                     failureType = node.@type
-                    failureText = node.text()
                     resultType = TestResult.ResultType.FAILURE
                 }
             }
@@ -179,7 +209,11 @@ class TestExportTask extends Exec {
                 result.resultType = TestResult.ResultType.SKIPPED
             }
         }
+        result.feature = getEnrichment().resolveFeature(p, solution)
+        result.steps =  getEnrichment().resolveSteps(p,solution)
         result.properties = resolveProperties(p)
+        result.projectName= project.getName()
+
         result
     }
 
@@ -192,4 +226,5 @@ class TestExportTask extends Exec {
         }
         return null
     }
+
 }
