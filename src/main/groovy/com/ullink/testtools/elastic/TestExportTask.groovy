@@ -16,9 +16,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
-import java.nio.file.Paths
 import java.security.MessageDigest
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -53,6 +51,10 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
+    def featureExport
+
+    @Input
+    @Optional
     def type = "testcase"
 
     @Input
@@ -63,21 +65,25 @@ class TestExportTask extends Exec {
     @Optional
     String indexTimestampPattern = "yyyy-MM"
 
+    @Input
+    @Optional
+    String buildTime = LocalDateTime.now().toString()
+
     @Internal
     BulkProcessor processor
     @Internal
     TransportClient client
 
-    def overrideDefaultProperties(Properties properties) {
-        if (getHost() != null) {
-            log.error "setting host " + getHost()
-            properties.setProperty('host', getHost())
+    static def overrideDefaultProperties(TestExportTask task, Properties properties) {
+        if (task.host != null) {
+            log.info "setting host ${task.host}" +
+            properties.setProperty('host', task.host)
         }
-        if (getClusterName() != null) {
-            properties.setProperty('clusterName', getClusterName())
+        if (task.clusterName != null) {
+            properties.setProperty('clusterName', task.clusterName)
         }
-        if (getPort() != null) {
-            properties.setProperty('port', getPort())
+        if (task.port != null) {
+            properties.setProperty('port', task.port)
         }
 
         return properties
@@ -86,7 +92,7 @@ class TestExportTask extends Exec {
     @Override
     void exec() {
         ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
-        Properties parameters = overrideDefaultProperties(elasticSearchProcessor.getParameters())
+        Properties parameters = overrideDefaultProperties(this, elasticSearchProcessor.getParameters())
 
         def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener()
         client = elasticSearchProcessor.buildTransportClient(parameters)
@@ -114,7 +120,7 @@ class TestExportTask extends Exec {
             def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
-                output= new JsonSlurper().parseText(output)
+                output = new JsonSlurper().parseText(output)
                 assert output instanceof Map
                 output.remove("timestamp")
 
@@ -143,17 +149,9 @@ class TestExportTask extends Exec {
             }
         }
 
-        def InputJSONFile = getEnrichment().featureJsonParser('getFeatureJsonFile')
-        def InputJSON = getEnrichment().featureJsonParser('getFeatureJsonParseText')
 
-        def indexFeature = "feature-" + indexPrefix + new SimpleDateFormat(indexTimestampPattern).format(InputJSONFile.lastModified())
-        String typeFinal = "feature"
-
-        for (object in InputJSON) {
-            String id = sha1Hashed(object.toString())
-            IndexRequest indexObjFeature = new IndexRequest(indexFeature, typeFinal, id)
-            object.productName= getProperties().product.name
-            processor.add(indexObjFeature.source(object, XContentType.JSON))
+        if (featureExport) {
+            featureExport.exportFeature(this)
         }
 
         processor.close()
@@ -170,16 +168,15 @@ class TestExportTask extends Exec {
         files.each {
             def xmlDoc = new XmlSlurper().parse(it)
             def fileName = (xmlDoc.@name)
-            String timestamp = xmlDoc.@timestamp
-            def solutions = getEnrichment().testCaseJsonParser(fileName)
-
-            def filePath = Paths.get("src", "test", "groovy", fileName.toString().replace(".", File.separator) + ".groovy")
 
             xmlDoc.children().each {
                 if (it.name() == "testcase") {
-                    Result result = parseTestCase(it,solutions)
-                    result.timestamp = timestamp
-                    result.filePath = filePath
+                    Result result = parseTestCase(it)
+
+                    if (enrichment) {
+                        result = enrichment.enrichJson(result, it, fileName)
+                    }
+
                     list << result
                 }
             }
@@ -187,9 +184,10 @@ class TestExportTask extends Exec {
         list
     }
 
-    def parseTestCase(def p, def solution) {
-        String testname = p.@name
-        Result result = new Result(name: testname)
+    def parseTestCase(def p) {
+        String testName = p.@name
+        Result result = new Result(name: testName)
+        result.timestamp = buildTime
         def time = Float.parseFloat(p.@time.toString()) * 1000
         result.with {
             classname = p.@classname
@@ -209,10 +207,8 @@ class TestExportTask extends Exec {
                 result.resultType = TestResult.ResultType.SKIPPED
             }
         }
-        result.feature = getEnrichment().resolveFeature(p, solution)
-        result.steps =  getEnrichment().resolveSteps(p,solution)
         result.properties = resolveProperties(p)
-        result.projectName= project.getName()
+        result.projectName = project.getName()
 
         result
     }
