@@ -51,10 +51,6 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    def featureExport
-
-    @Input
-    @Optional
     def type = "testcase"
 
     @Input
