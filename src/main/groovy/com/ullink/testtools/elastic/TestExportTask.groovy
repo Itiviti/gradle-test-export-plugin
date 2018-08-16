@@ -3,6 +3,7 @@ package com.ullink.testtools.elastic
 import com.ullink.testtools.elastic.models.Result
 import groovy.io.FileType
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
@@ -46,6 +47,10 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
+    def enrichment
+
+    @Input
+    @Optional
     def type = "testcase"
 
     @Input
@@ -54,31 +59,36 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    String indexTimestampPattern = "yyyy-MM-dd"
+    String indexTimestampPattern = "yyyy-MM"
+
+    @Input
+    @Optional
+    String buildTime = LocalDateTime.now().toString()
 
     @Internal
     BulkProcessor processor
     @Internal
     TransportClient client
 
-    def overrideDefaultProperties(Properties properties) {
-        if (getHost() != null) {
-            log.error "setting host " + getHost()
-            properties.setProperty('host', getHost())
+    static def overrideDefaultProperties(TestExportTask task, Properties properties) {
+        if (task.host != null) {
+            log.info "setting host ${task.host}" +
+            properties.setProperty('host', task.host)
         }
-        if (getClusterName() != null) {
-            properties.setProperty('clusterName', getClusterName())
+        if (task.clusterName != null) {
+            properties.setProperty('clusterName', task.clusterName)
         }
-        if (getPort() != null) {
-            properties.setProperty('port', getPort())
+        if (task.port != null) {
+            properties.setProperty('port', task.port)
         }
+
         return properties
     }
 
     @Override
     void exec() {
         ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
-        Properties parameters = overrideDefaultProperties(elasticSearchProcessor.getParameters())
+        Properties parameters = overrideDefaultProperties(this, elasticSearchProcessor.getParameters())
 
         def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener()
         client = elasticSearchProcessor.buildTransportClient(parameters)
@@ -106,9 +116,14 @@ class TestExportTask extends Exec {
             def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
-                def timetamp = LocalDateTime.parse(it.timestamp)
-                String index = indexPrefix + timetamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
+                output = new JsonSlurper().parseText(output)
+                assert output instanceof Map
+                output.remove("timestamp")
+
+                def timestamp = LocalDateTime.parse(it.timestamp)
+                String index = indexPrefix + timestamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
                 index = index.replace('.', '-')
+
                 String typeFinal
                 switch (type) {
                     case GString:
@@ -123,6 +138,7 @@ class TestExportTask extends Exec {
                     default:
                         throw new IllegalArgumentException("'type' attribute of type ${type.getClass()} is not supported")
                 }
+
                 String id = sha1Hashed(it.getClassname() + it.getName() + it.timestamp)
                 IndexRequest indexObj = new IndexRequest(index, typeFinal, id)
                 processor.add(indexObj.source(output, XContentType.JSON))
@@ -134,7 +150,7 @@ class TestExportTask extends Exec {
 
     static def sha1Hashed(String value) {
         def messageDigest = MessageDigest.getInstance("SHA-1")
-        String hexString = messageDigest.digest(value.getBytes()).collect { String.format('%02x', it)}.join()
+        String hexString = messageDigest.digest(value.getBytes()).collect { String.format('%02x', it) }.join()
         return hexString
     }
 
@@ -142,23 +158,27 @@ class TestExportTask extends Exec {
         def list = []
         files.each {
             def xmlDoc = new XmlSlurper().parse(it)
-            String timestamp = xmlDoc.@timestamp
+            def fileName = (xmlDoc.@name)
 
             xmlDoc.children().each {
                 if (it.name() == "testcase") {
                     Result result = parseTestCase(it)
-                    result.timestamp = timestamp
+
+                    if (enrichment) {
+                        result = enrichment.enrichJson(result, it, fileName)
+                    }
+
                     list << result
                 }
             }
         }
-
         list
     }
 
     def parseTestCase(def p) {
-        String testname = p.@name
-        Result result = new Result(name: testname)
+        String testName = p.@name
+        Result result = new Result(name: testName)
+        result.timestamp = buildTime
         def time = Float.parseFloat(p.@time.toString()) * 1000
         result.with {
             classname = p.@classname
@@ -171,7 +191,6 @@ class TestExportTask extends Exec {
                 result.with {
                     failureMessage = node.@message
                     failureType = node.@type
-                    failureText = node.text()
                     resultType = TestResult.ResultType.FAILURE
                 }
             }
@@ -180,6 +199,8 @@ class TestExportTask extends Exec {
             }
         }
         result.properties = resolveProperties(p)
+        result.projectName = project.getName()
+
         result
     }
 
@@ -192,4 +213,5 @@ class TestExportTask extends Exec {
         }
         return null
     }
+
 }
