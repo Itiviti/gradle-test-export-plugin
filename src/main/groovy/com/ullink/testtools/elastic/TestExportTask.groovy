@@ -149,11 +149,6 @@ class TestExportTask extends Exec {
             }
         }
 
-
-        if (featureExport) {
-            featureExport.exportFeature(this)
-        }
-
         processor.close()
     }
 
