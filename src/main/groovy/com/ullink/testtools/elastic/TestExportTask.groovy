@@ -3,7 +3,6 @@ package com.ullink.testtools.elastic
 import com.ullink.testtools.elastic.models.Result
 import groovy.io.FileType
 import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
@@ -47,7 +46,7 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    def enrichment
+    Closure<Result> enrichment
 
     @Input
     @Optional
@@ -63,7 +62,7 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    String buildTime = LocalDateTime.now().toString()
+    LocalDateTime buildTime = LocalDateTime.now()
 
     @Internal
     BulkProcessor processor
@@ -116,11 +115,7 @@ class TestExportTask extends Exec {
             def list = parseTestFiles(files)
             list.each {
                 def output = JsonOutput.toJson(it)
-                output = new JsonSlurper().parseText(output)
-                assert output instanceof Map
-                output.remove("timestamp")
-
-                def timestamp = LocalDateTime.parse(it.timestamp)
+                def timestamp = buildTime
                 String index = indexPrefix + timestamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
                 index = index.replace('.', '-')
 
@@ -156,16 +151,16 @@ class TestExportTask extends Exec {
 
     List<Result> parseTestFiles(List<File> files) {
         def list = []
-        files.each {
-            def xmlDoc = new XmlSlurper().parse(it)
-            def fileName = (xmlDoc.@name)
+        files.each { file ->
+            def xmlDoc = new XmlSlurper().parse(file)
 
             xmlDoc.children().each {
                 if (it.name() == "testcase") {
                     Result result = parseTestCase(it)
+                    result.timestamp = buildTime.toString()
 
                     if (enrichment) {
-                        result = enrichment.enrichJson(result, it, fileName)
+                        result = enrichment.call(result, it)
                     }
 
                     list << result
@@ -178,7 +173,6 @@ class TestExportTask extends Exec {
     def parseTestCase(def p) {
         String testName = p.@name
         Result result = new Result(name: testName)
-        result.timestamp = buildTime
         def time = Float.parseFloat(p.@time.toString()) * 1000
         result.with {
             classname = p.@classname
