@@ -8,6 +8,7 @@ class Result {
     float executionTime
     String failureMessage
     String failureType
+    String failureText
     TestResult.ResultType resultType
     String timestamp
     String projectName
