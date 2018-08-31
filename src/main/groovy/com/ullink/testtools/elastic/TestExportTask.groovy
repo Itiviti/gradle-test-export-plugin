@@ -96,7 +96,9 @@ class TestExportTask extends Exec {
             targetDirectory = []
             project.tasks.withType(Test.class).forEach {
                 def xmlReport = it.reports.getJunitXml()
-                targetDirectory << xmlReport.getDestination()
+                if (xmlReport.destination.exists()) {
+                    targetDirectory << xmlReport.getDestination()
+                }
             }
         }
         if (targetDirectory instanceof GString) {
