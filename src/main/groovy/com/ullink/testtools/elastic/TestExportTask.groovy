@@ -25,15 +25,15 @@ class TestExportTask extends Exec {
 
     @Input
     @Optional
-    String port
+    String port = "9300"
 
     @Input
     @Optional
-    String clusterName
+    String clusterName = "elasticsearch"
 
     @Input
     @Optional
-    String host
+    String host = "127.0.0.1"
 
     @Input
     @Optional
@@ -68,25 +68,13 @@ class TestExportTask extends Exec {
     @Internal
     TransportClient client
 
-    static def overrideDefaultProperties(TestExportTask task, Properties properties) {
-        if (task.host != null) {
-            log.info "setting host ${task.host}" +
-            properties.setProperty('host', task.host)
-        }
-        if (task.clusterName != null) {
-            properties.setProperty('clusterName', task.clusterName)
-        }
-        if (task.port != null) {
-            properties.setProperty('port', task.port)
-        }
-
-        return properties
-    }
-
     @Override
     void exec() {
         ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
-        Properties parameters = overrideDefaultProperties(this, elasticSearchProcessor.getParameters())
+        Properties parameters = new Properties()
+        parameters.setProperty('host', host)
+        parameters.setProperty('port', port)
+        parameters.setProperty('clusterName', clusterName)
 
         def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener()
         client = elasticSearchProcessor.buildTransportClient(parameters)
