@@ -11,14 +11,6 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient
 
 class ElasticSearchProcessor {
 
-    InputStream DEFAULT_PROPERTIES_FILE
-    Properties parameters
-
-    ElasticSearchProcessor() {
-        DEFAULT_PROPERTIES_FILE = ElasticSearchProcessor.class.getResourceAsStream("/elastic-search.properties")
-        this.parameters = new PropertiesLoader(DEFAULT_PROPERTIES_FILE).getParameters()
-    }
-
     def buildTransportClient(Properties parameters) {
         String clusterName = parameters.getProperty("clusterName", "elasticsearch")
         Settings settings = new Settings.Builder()
