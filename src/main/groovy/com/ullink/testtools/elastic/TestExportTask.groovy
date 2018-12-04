@@ -80,12 +80,18 @@ class TestExportTask extends Exec {
         client = elasticSearchProcessor.buildTransportClient(parameters)
         processor = elasticSearchProcessor.buildBulkRequest(client, bulkProcessorListener)
 
+        def index = indexPrefix + buildTime.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
+        index = index.replace('.', '-')
+
         if (targetDirectory == null) {
             targetDirectory = []
             project.tasks.withType(Test.class).forEach {
                 def xmlReport = it.reports.getJunitXml()
                 if (xmlReport.destination.exists()) {
+                    project.logger.debug("Adding ${xmlReport.destination} to processing as an output of a test task")
                     targetDirectory << xmlReport.getDestination()
+                } else {
+                    project.logger.debug("Ignoring ${xmlReport.destination} as it does not exist")
                 }
             }
         }
@@ -95,18 +101,20 @@ class TestExportTask extends Exec {
         if (targetDirectory instanceof String) {
             targetDirectory = singletonList(new File(targetDirectory))
         }
+        project.logger.info("Found ${targetDirectory.size()} directories to process")
         targetDirectory.each {
+            project.logger.info("Processing directory ${it}")
             def files = []
             it.eachFileRecurse(FileType.FILES) {
-                if (it.getName().endsWith('.xml'))
+                if (it.getName().endsWith('.xml')) {
+                    project.logger.debug("Found a test file ${it}")
                     files << it
+                }
             }
             def list = parseTestFiles(files)
+            project.logger.info("Found ${list.size()} test case results to export into ${index}")
             list.each {
                 def output = JsonOutput.toJson(it)
-                def timestamp = buildTime
-                String index = indexPrefix + timestamp.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
-                index = index.replace('.', '-')
 
                 String typeFinal
                 switch (type) {
@@ -136,6 +144,7 @@ class TestExportTask extends Exec {
         files.each { file ->
             def xmlDoc = new XmlSlurper().parse(file)
 
+            def count = 0
             xmlDoc.children().each {
                 if (it.name() == "testcase") {
                     Result result = parseTestCase(it)
@@ -146,8 +155,10 @@ class TestExportTask extends Exec {
                     }
 
                     list << result
+                    count += 1
                 }
             }
+            project.logger.debug("Found ${count} test cases in ${file}")
         }
         list
     }
