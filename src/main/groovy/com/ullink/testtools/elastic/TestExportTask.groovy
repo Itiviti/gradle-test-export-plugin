@@ -8,10 +8,11 @@ import org.elasticsearch.action.bulk.BulkProcessor
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.xcontent.XContentType
-import org.gradle.api.tasks.Exec
+import org.gradle.api.internal.ConventionTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestResult
 
@@ -21,7 +22,7 @@ import java.time.format.DateTimeFormatter
 import static java.util.Collections.singletonList
 
 @Slf4j
-class TestExportTask extends Exec {
+class TestExportTask extends ConventionTask {
 
     @Input
     @Optional
@@ -68,7 +69,7 @@ class TestExportTask extends Exec {
     @Internal
     TransportClient client
 
-    @Override
+    @TaskAction
     void exec() {
         ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
         Properties parameters = new Properties()
