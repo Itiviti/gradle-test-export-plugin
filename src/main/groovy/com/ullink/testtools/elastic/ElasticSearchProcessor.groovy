@@ -8,6 +8,7 @@ import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.TransportAddress
 import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.transport.client.PreBuiltTransportClient
+import org.gradle.api.logging.Logger
 
 class ElasticSearchProcessor {
 
@@ -30,19 +31,21 @@ class ElasticSearchProcessor {
 
     }
 
-    def buildBulkProcessorListener() {
+    def buildBulkProcessorListener(Logger logger) {
         return new BulkProcessor.Listener() {
             @Override
             void beforeBulk(long executionId, BulkRequest request) {
+                logger.error("Execution of bulk ${executionId} ${request.description} starting")
             }
 
             @Override
             void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+                logger.error("Execution of bulk ${executionId} ${request.description} complete")
             }
 
             @Override
             void afterBulk(long executionId, BulkRequest request, Throwable failure) {
-                failure.printStackTrace()
+                logger.error("Execution of bulk ${executionId} ${request.description} failed", failure)
             }
         }
     }
