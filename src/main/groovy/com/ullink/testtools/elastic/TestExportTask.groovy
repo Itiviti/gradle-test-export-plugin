@@ -18,6 +18,7 @@ import org.gradle.api.tasks.testing.TestResult
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 import static java.util.Collections.singletonList
 
@@ -77,7 +78,7 @@ class TestExportTask extends ConventionTask {
         parameters.setProperty('port', port)
         parameters.setProperty('clusterName', clusterName)
 
-        def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener()
+        def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener(project.logger)
         client = elasticSearchProcessor.buildTransportClient(parameters)
         processor = elasticSearchProcessor.buildBulkRequest(client, bulkProcessorListener)
 
@@ -137,7 +138,10 @@ class TestExportTask extends ConventionTask {
             }
         }
 
-        processor.close()
+        project.logger.info("Executing bulk export to Elasticsearch")
+        if (!processor.awaitClose(1, TimeUnit.HOURS)) {
+            project.logger.error("Export to Elasticsearch timed out after one hour")
+        }
     }
 
     List<Result> parseTestFiles(List<File> files) {
