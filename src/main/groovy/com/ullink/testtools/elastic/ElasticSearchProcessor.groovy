@@ -35,12 +35,20 @@ class ElasticSearchProcessor {
         return new BulkProcessor.Listener() {
             @Override
             void beforeBulk(long executionId, BulkRequest request) {
-                logger.error("Execution of bulk ${executionId} ${request.description} starting")
+                logger.info("Execution of bulk ${executionId} ${request.description} starting")
             }
 
             @Override
             void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
-                logger.error("Execution of bulk ${executionId} ${request.description} complete")
+                def failures = response.items.findAll { it.failure }
+                if (failures.size()) {
+                    logger.info("Execution of bulk ${executionId} ${request.description} completed with errors")
+                    for (def failure : failures) {
+                        logger.error("An error occurred while executing item ${failure.failure.id}: ${failure.failure.status}: ${failure.failure.message}", failure.failure.cause)
+                    }
+                } else {
+                    logger.info("Execution of bulk ${executionId} ${request.description} completed successfully")
+                }
             }
 
             @Override

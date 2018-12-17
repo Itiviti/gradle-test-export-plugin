@@ -140,7 +140,9 @@ class TestExportTask extends ConventionTask {
 
         project.logger.info("Executing bulk export to Elasticsearch")
         if (!processor.awaitClose(10, TimeUnit.MINUTES)) {
-            project.logger.error("Export to Elasticsearch timed out after one hour")
+            project.logger.error("Export to Elasticsearch timed out after 10 minutes")
+        } else {
+            project.logger.info("Executed bulk export to Elasticsearch successfully")
         }
     }
 
