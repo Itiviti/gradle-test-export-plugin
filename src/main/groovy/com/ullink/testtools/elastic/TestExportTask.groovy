@@ -89,9 +89,9 @@ class TestExportTask extends ConventionTask {
             targetDirectory = []
             project.tasks.withType(Test.class).forEach {
                 def xmlReport = it.reports.getJunitXml()
-                if (xmlReport.destination.exists()) {
+                if (xmlReport.destination.exists() && !targetDirectory.contains(xmlReport.destination)) {
                     project.logger.debug("Adding ${xmlReport.destination} to processing as an output of a test task")
-                    targetDirectory << xmlReport.getDestination()
+                    targetDirectory << xmlReport.destination
                 } else {
                     project.logger.debug("Ignoring ${xmlReport.destination} as it does not exist")
                 }
