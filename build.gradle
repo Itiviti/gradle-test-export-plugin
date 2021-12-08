@@ -42,6 +42,6 @@ dependencies {
 
 configurations.all {
     resolutionStrategy {
-        force 'org.codehaus.groovy:groovy-all:2.4.12'
+        force 'org.codehaus.groovy:groovy-all:3.0.9'
     }
 }
