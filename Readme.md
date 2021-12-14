@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Ullink/gradle-test-export-plugin.svg?branch=master)](https://travis-ci.org/Ullink/gradle-test-export-plugin) [![](https://jitpack.io/v/Ullink/gradle-test-export-plugin.svg)](https://jitpack.io/#Ullink/gradle-test-export-plugin)
+[![Build Status](https://travis-ci.org/Itiviti/gradle-test-export-plugin.svg?branch=master)](https://travis-ci.org/Itiviti/gradle-test-export-plugin) [![](https://jitpack.io/v/Itiviti/gradle-test-export-plugin.svg)](https://jitpack.io/#Itiviti/gradle-test-export-plugin)
 
 
 # Gradle Test Export Plugin
@@ -9,7 +9,7 @@ The main prupose of this plugin is to read the `xml` test results files and post
 the results for visualization on a Kibana Dashboard.
 
 ## Maven/Gradle
-You can add this plugin as a dependency to your project through [JitPack](https://jitpack.io/#Ullink/gradle-test-export-plugin).
+You can add this plugin as a dependency to your project through [JitPack](https://jitpack.io/#Itiviti/gradle-test-export-plugin).
 
 ```
 apply: plugin 'test-export'
