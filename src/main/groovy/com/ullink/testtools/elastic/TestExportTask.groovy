@@ -4,13 +4,12 @@ import com.ullink.testtools.elastic.models.Result
 import groovy.io.FileType
 import groovy.json.JsonOutput
 import groovy.util.logging.Slf4j
-import org.elasticsearch.action.bulk.BulkProcessor
-import org.elasticsearch.action.index.IndexRequest
-import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.xcontent.XContentType
-import org.gradle.api.internal.ConventionTask
+import org.apache.http.HttpHost
+import org.apache.http.entity.ContentType
+import org.apache.http.nio.entity.NStringEntity
+import org.elasticsearch.client.RestClient
+import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.testing.Test
@@ -18,23 +17,16 @@ import org.gradle.api.tasks.testing.TestResult
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 import static java.util.Collections.singletonList
 
 @Slf4j
-class TestExportTask extends ConventionTask {
+class TestExportTask extends DefaultTask {
 
     @Input
-    @Optional
-    String port = "9300"
+    int port = 9300
 
     @Input
-    @Optional
-    String clusterName = "elasticsearch"
-
-    @Input
-    @Optional
     String host = "127.0.0.1"
 
     @Input
@@ -65,22 +57,16 @@ class TestExportTask extends ConventionTask {
     @Optional
     LocalDateTime buildTime = LocalDateTime.now()
 
-    @Internal
-    BulkProcessor processor
-    @Internal
-    TransportClient client
-
     @TaskAction
     void exec() {
-        ElasticSearchProcessor elasticSearchProcessor = new ElasticSearchProcessor()
-        Properties parameters = new Properties()
-        parameters.setProperty('host', host)
-        parameters.setProperty('port', port)
-        parameters.setProperty('clusterName', clusterName)
-
-        def bulkProcessorListener = elasticSearchProcessor.buildBulkProcessorListener(project.logger)
-        client = elasticSearchProcessor.buildTransportClient(parameters)
-        processor = elasticSearchProcessor.buildBulkRequest(client, bulkProcessorListener)
+        def client = RestClient.builder(new HttpHost(host, port, 'http'))
+                .setFailureListener(new RestClient.FailureListener() {
+                    @Override
+                    void onFailure(HttpHost host) {
+                        logger.error("Failed to upload document")
+                    }
+                })
+                .build()
 
         def index = indexPrefix + buildTime.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
         index = index.replace('.', '-')
@@ -90,10 +76,10 @@ class TestExportTask extends ConventionTask {
             project.tasks.withType(Test.class).forEach {
                 def xmlReport = it.reports.getJunitXml()
                 if (xmlReport.destination.exists() && !targetDirectory.contains(xmlReport.destination)) {
-                    project.logger.debug("Adding ${xmlReport.destination} to processing as an output of a test task")
+                    logger.debug("Adding ${xmlReport.destination} to processing as an output of a test task")
                     targetDirectory << xmlReport.destination
                 } else {
-                    project.logger.debug("Ignoring ${xmlReport.destination} as it does not exist")
+                    logger.debug("Ignoring ${xmlReport.destination} as it does not exist")
                 }
             }
         }
@@ -103,46 +89,43 @@ class TestExportTask extends ConventionTask {
         if (targetDirectory instanceof String) {
             targetDirectory = singletonList(new File(targetDirectory))
         }
-        project.logger.info("Found ${targetDirectory.size()} directories to process")
+        logger.info("Found ${targetDirectory.size()} directories to process")
         targetDirectory.each {
-            project.logger.info("Processing directory ${it}")
+            logger.info("Processing directory ${it}")
             def files = []
             it.eachFileRecurse(FileType.FILES) {
                 if (it.getName().endsWith('.xml')) {
-                    project.logger.debug("Found a test file ${it}")
+                    logger.debug("Found a test file ${it}")
                     files << it
                 }
             }
             def list = parseTestFiles(files)
-            project.logger.info("Found ${list.size()} test case results to export into ${index}")
-            list.each {
-                def output = JsonOutput.toJson(it)
+            logger.info("Found ${list.size()} test case results to export into ${index}")
 
-                String typeFinal
-                switch (type) {
-                    case GString:
-                        typeFinal = type.toString()
-                        break
-                    case String:
-                        typeFinal = type
-                        break
-                    case Closure:
-                        typeFinal = type.call()
-                        break
-                    default:
-                        throw new IllegalArgumentException("'type' attribute of type ${type.getClass()} is not supported")
-                }
-
-                IndexRequest indexObj = new IndexRequest(index, typeFinal)
-                processor.add(indexObj.source(output, XContentType.JSON))
+            String typeFinal
+            switch (type) {
+                case GString:
+                    typeFinal = type.toString()
+                    break
+                case String:
+                    typeFinal = type
+                    break
+                case Closure:
+                    typeFinal = type.call()
+                    break
+                default:
+                    throw new IllegalArgumentException("'type' attribute of type ${type.getClass()} is not supported")
             }
-        }
 
-        project.logger.info("Executing bulk export to Elasticsearch")
-        if (!processor.awaitClose(10, TimeUnit.MINUTES)) {
-            project.logger.error("Export to Elasticsearch timed out after 10 minutes")
-        } else {
-            project.logger.info("Executed bulk export to Elasticsearch successfully")
+            def indexJson = "{\"index\":{\"_index\": \"$index\", \"_type\": \"$typeFinal\"}}\n"
+            list.collate(100).each {
+                StringBuilder jsonBuilder = new StringBuilder()
+                jsonBuilder.append(indexJson)
+                it.each {result -> jsonBuilder.append(JsonOutput.toJson(result)).append('\n') }
+
+                NStringEntity entity = new NStringEntity(jsonBuilder.toString(), ContentType.APPLICATION_JSON)
+                client.performRequest('POST', "/_bulk", ['pretty': 'true'], entity)
+            }
         }
     }
 
