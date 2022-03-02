@@ -6,7 +6,6 @@ apply plugin: 'java-gradle-plugin'
 targetCompatibility = JavaVersion.VERSION_1_8
 sourceCompatibility = JavaVersion.VERSION_1_8
 
-
 repositories {
     mavenCentral()
 }
@@ -23,15 +22,14 @@ jar {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier.set('sources')
     from sourceSets.main.allSource
 }
 
 dependencies {
     implementation(
             'junit:junit:4.12',
-            'org.elasticsearch.client:transport:6.2.2',
-            'org.apache.logging.log4j:log4j-core:2.8.2'
+            'org.elasticsearch.client:elasticsearch-rest-client:6.3.2'
     )
 
     testImplementation(
