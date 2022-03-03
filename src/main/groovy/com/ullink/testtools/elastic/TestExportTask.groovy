@@ -24,7 +24,7 @@ import static java.util.Collections.singletonList
 class TestExportTask extends DefaultTask {
 
     @Input
-    int port = 9300
+    int port = 9200
 
     @Input
     String host = "127.0.0.1"
@@ -63,9 +63,10 @@ class TestExportTask extends DefaultTask {
                 .setFailureListener(new RestClient.FailureListener() {
                     @Override
                     void onFailure(HttpHost host) {
-                        logger.error("Failed to upload document")
+                        logger.error("Failed to upload the test reports.")
                     }
                 })
+                .setMaxRetryTimeoutMillis(600000)
                 .build()
 
         def index = indexPrefix + buildTime.format(DateTimeFormatter.ofPattern(indexTimestampPattern))
@@ -118,13 +119,16 @@ class TestExportTask extends DefaultTask {
             }
 
             def indexJson = "{\"index\":{\"_index\": \"$index\", \"_type\": \"$typeFinal\"}}\n"
-            list.collate(100).each {
+            list.collate(100).withIndex().each { batchLists, batchIndex ->
                 StringBuilder jsonBuilder = new StringBuilder()
-                jsonBuilder.append(indexJson)
-                it.each {result -> jsonBuilder.append(JsonOutput.toJson(result)).append('\n') }
+                batchLists.each { result -> jsonBuilder.append(indexJson)
+                        .append(JsonOutput.toJson(result))
+                        .append('\n')
+                }
 
                 NStringEntity entity = new NStringEntity(jsonBuilder.toString(), ContentType.APPLICATION_JSON)
-                client.performRequest('POST', "/_bulk", ['pretty': 'true'], entity)
+                def response = client.performRequest('POST', "/_bulk", ['pretty': 'true'], entity)
+                logger.info("Batch ${batchIndex}: " + response.toString())
             }
         }
     }
